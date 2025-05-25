@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
@@ -6,6 +7,7 @@ import ChatInputArea from '@/components/chat-input-area';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { processUserMessage } from './actions';
 import { BotIcon } from 'lucide-react';
+import { useToast } from "@/hooks/use-toast";
 
 export default function LinguaLivePage() {
   const [messages, setMessages] = useState<Message[]>([
@@ -17,7 +19,70 @@ export default function LinguaLivePage() {
     }
   ]);
   const [isAiResponding, setIsAiResponding] = useState(false);
+  const [isAiSpeaking, setIsAiSpeaking] = useState(false);
   const scrollAreaViewportRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
+  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+
+
+  const speak = (text: string) => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      // Cancel any ongoing speech
+      if (window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+      }
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US'; // You can make this configurable later
+      
+      // Attempt to find a suitable voice (optional, browser defaults are usually fine)
+      const voices = window.speechSynthesis.getVoices();
+      const englishVoice = voices.find(voice => voice.lang.startsWith('en') && voice.default) || voices.find(voice => voice.lang.startsWith('en'));
+      if (englishVoice) {
+        utterance.voice = englishVoice;
+      }
+
+      utterance.onstart = () => setIsAiSpeaking(true);
+      utterance.onend = () => setIsAiSpeaking(false);
+      utterance.onerror = (event) => {
+        console.error("Speech synthesis error", event);
+        toast({
+          title: "Speech Error",
+          description: "Could not play audio response.",
+          variant: "destructive",
+        });
+        setIsAiSpeaking(false);
+      };
+      
+      utteranceRef.current = utterance; // Store utterance to potentially cancel later
+      window.speechSynthesis.speak(utterance);
+    } else {
+      toast({
+        title: "Speech Feature Not Available",
+        description: "Text-to-speech is not supported by your browser.",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  // Load voices initially and on change
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        const loadVoices = () => {
+            window.speechSynthesis.getVoices(); // This populates the voice list
+        };
+        loadVoices(); // Initial load
+        window.speechSynthesis.onvoiceschanged = loadVoices; // Update if voices change
+
+        return () => {
+            window.speechSynthesis.onvoiceschanged = null;
+            if (window.speechSynthesis.speaking) {
+                window.speechSynthesis.cancel();
+            }
+        };
+    }
+  }, []);
+
 
   const scrollToBottom = () => {
     if (scrollAreaViewportRef.current) {
@@ -29,7 +94,23 @@ export default function LinguaLivePage() {
     scrollToBottom();
   }, [messages]);
 
+  // Speak initial message
+  useEffect(() => {
+    if (messages.length === 1 && messages[0].id === 'initial-ai-message') {
+      // A slight delay to ensure voices might be loaded and user is ready.
+      setTimeout(() => speak(messages[0].text), 500);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages]);
+
+
   const handleSendMessage = async (text: string) => {
+    // If AI is currently speaking, stop it before sending new message / getting new response
+    if (window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+        setIsAiSpeaking(false);
+    }
+
     const userMessage: Message = {
       id: crypto.randomUUID(),
       text,
@@ -48,19 +129,24 @@ export default function LinguaLivePage() {
         timestamp: new Date(),
       };
       setMessages((prevMessages) => [...prevMessages, aiMessage]);
+      speak(aiResponse);
     } catch (error) {
       console.error("Error getting AI response:", error);
+      const errorMessageText = "Sorry, I couldn't process that. Please try again.";
       const errorMessage: Message = {
         id: crypto.randomUUID(),
-        text: "Sorry, I couldn't process that. Please try again.",
+        text: errorMessageText,
         sender: 'ai',
         timestamp: new Date(),
       };
       setMessages((prevMessages) => [...prevMessages, errorMessage]);
+      speak(errorMessageText);
     } finally {
       setIsAiResponding(false);
     }
   };
+  
+  const isLoadingOverall = isAiResponding || isAiSpeaking;
 
   return (
     <div className="flex flex-col h-screen bg-background">
@@ -76,7 +162,7 @@ export default function LinguaLivePage() {
           {messages.map((msg) => (
             <ChatMessage key={msg.id} message={msg} />
           ))}
-          {isAiResponding && (
+          {isAiResponding && !isAiSpeaking && ( // Show thinking only if not already speaking
             <div className="flex justify-start items-end gap-2">
                 <div className="h-8 w-8 flex-shrink-0">
                     <BotIcon className="h-full w-full text-primary" />
@@ -89,7 +175,7 @@ export default function LinguaLivePage() {
         </div>
       </ScrollArea>
 
-      <ChatInputArea onSubmit={handleSendMessage} isLoading={isAiResponding} />
+      <ChatInputArea onSubmit={handleSendMessage} isLoading={isLoadingOverall} />
     </div>
   );
 }
