@@ -1,12 +1,19 @@
-// The AI tutor analyzes spoken English, identifies errors, and provides real-time corrected responses.
+// The AI tutor analyzes spoken English, identifies errors, and provides real-time corrected responses, remembering conversation history.
 
 'use server';
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
+const ConversationMessageSchema = z.object({
+  role: z.enum(['user', 'model']).describe("The role of the message sender, either 'user' or 'model' (for AI)."),
+  content: z.string().describe("The text content of the message.")
+});
+export type ConversationMessage = z.infer<typeof ConversationMessageSchema>;
+
 const CorrectGrammarAndRespondInputSchema = z.object({
   userText: z.string().describe('The transcribed text of the user\'s speech.'),
+  conversationHistory: z.array(ConversationMessageSchema).max(10).optional().describe('The last up to 10 messages in the conversation history. "model" is the AI tutor, "user" is the human user.')
 });
 export type CorrectGrammarAndRespondInput = z.infer<typeof CorrectGrammarAndRespondInputSchema>;
 
@@ -23,7 +30,7 @@ const correctGrammarAndRespondPrompt = ai.definePrompt({
   name: 'correctGrammarAndRespondPrompt',
   input: {schema: CorrectGrammarAndRespondInputSchema},
   output: {schema: CorrectGrammarAndRespondOutputSchema},
-  prompt: `You are an AI English conversation partner and tutor.  Your primary goal is to help the user practice and improve their spoken English in a friendly, supportive, and real-time conversational setting. You will engage in natural dialogue, understand the user's meaning, and gently correct any grammatical errors, awkward phrasing, or incorrect vocabulary you detect in their speech (which you receive as transcribed text).
+  prompt: `You are an AI English conversation partner and tutor. Your primary goal is to help the user practice and improve their spoken English in a friendly, supportive, and real-time conversational setting. You will engage in natural dialogue, understand the user's meaning, and gently correct any grammatical errors, awkward phrasing, or incorrect vocabulary you detect in their speech (which you receive as transcribed text).
 
 Follow these instructions:
 1. Listen & Respond First: Always acknowledge or respond to the *meaning* of the user's input first, just like in a normal conversation.
@@ -35,9 +42,16 @@ Follow these instructions:
 4. Keep it Concise: Your responses should be relatively brief and easy to process for real-time speaking. Avoid long explanations or monologues.
 5. Maintain Flow: After a correction, seamlessly continue the conversation based on the user's original statement or ask a relevant follow-up question.
 6. Tone: Always maintain a positive and encouraging tone, even when correcting. The goal is improvement, not criticism.
+7. Context: Use the conversation history provided (if any) to maintain context and coherence in your responses.
 
-Here is the user's input:
+{{#if conversationHistory}}
+Conversation History (oldest to newest, leading up to the current user input):
+{{#each conversationHistory}}
+{{#if (eq this.role "user")}}User: {{this.content}}{{else}}Tutor: {{this.content}}{{/if}}
+{{/each}}
 
+{{/if}}
+Current user input that you need to respond to:
 {{userText}}`,
 });
 
@@ -52,3 +66,4 @@ const correctGrammarAndRespondFlow = ai.defineFlow(
     return output!;
   }
 );
+

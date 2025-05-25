@@ -6,6 +6,7 @@ import ChatMessage, { type Message } from '@/components/chat-message';
 import ChatInputArea from '@/components/chat-input-area';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { processUserMessage } from './actions';
+import type { CorrectGrammarAndRespondInput } from '@/ai/flows/correct-grammar-and-respond';
 import { BotIcon } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 
@@ -33,9 +34,8 @@ export default function LinguaLivePage() {
       }
 
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'en-US'; // You can make this configurable later
+      utterance.lang = 'en-US'; 
       
-      // Attempt to find a suitable voice (optional, browser defaults are usually fine)
       const voices = window.speechSynthesis.getVoices();
       const englishVoice = voices.find(voice => voice.lang.startsWith('en') && voice.default) || voices.find(voice => voice.lang.startsWith('en'));
       if (englishVoice) {
@@ -54,7 +54,7 @@ export default function LinguaLivePage() {
         setIsAiSpeaking(false);
       };
       
-      utteranceRef.current = utterance; // Store utterance to potentially cancel later
+      utteranceRef.current = utterance; 
       window.speechSynthesis.speak(utterance);
     } else {
       toast({
@@ -65,14 +65,13 @@ export default function LinguaLivePage() {
     }
   };
   
-  // Load voices initially and on change
   useEffect(() => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
         const loadVoices = () => {
-            window.speechSynthesis.getVoices(); // This populates the voice list
+            window.speechSynthesis.getVoices(); 
         };
-        loadVoices(); // Initial load
-        window.speechSynthesis.onvoiceschanged = loadVoices; // Update if voices change
+        loadVoices(); 
+        window.speechSynthesis.onvoiceschanged = loadVoices; 
 
         return () => {
             window.speechSynthesis.onvoiceschanged = null;
@@ -94,22 +93,30 @@ export default function LinguaLivePage() {
     scrollToBottom();
   }, [messages]);
 
-  // Speak initial message
   useEffect(() => {
-    if (messages.length === 1 && messages[0].id === 'initial-ai-message') {
-      // A slight delay to ensure voices might be loaded and user is ready.
+    if (messages.length === 1 && messages[0].id === 'initial-ai-message' && !messages[0].text.startsWith("Hello! I'm LinguaLive")) {
+        // Only speak if it's the very first default message, to avoid re-speaking if user refreshes.
+        // This logic might need adjustment if the initial message changes or if we want it to always speak on first load.
+    } else if (messages.length === 1 && messages[0].id === 'initial-ai-message') {
       setTimeout(() => speak(messages[0].text), 500);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [messages]);
+  }, []);
 
 
   const handleSendMessage = async (text: string) => {
-    // If AI is currently speaking, stop it before sending new message / getting new response
     if (window.speechSynthesis.speaking) {
         window.speechSynthesis.cancel();
         setIsAiSpeaking(false);
     }
+
+    const historyToKeep = 10;
+    // Prepare conversation history from messages *before* adding the current user's message
+    const conversationHistoryForAPI: CorrectGrammarAndRespondInput['conversationHistory'] =
+      messages.slice(-historyToKeep).map(msg => ({
+        role: msg.sender === 'user' ? 'user' : 'model',
+        content: msg.text,
+      }));
 
     const userMessage: Message = {
       id: crypto.randomUUID(),
@@ -121,7 +128,10 @@ export default function LinguaLivePage() {
     setIsAiResponding(true);
 
     try {
-      const { aiResponse } = await processUserMessage({ userText: text });
+      const { aiResponse } = await processUserMessage({ 
+        userText: text,
+        conversationHistory: conversationHistoryForAPI,
+      });
       const aiMessage: Message = {
         id: crypto.randomUUID(),
         text: aiResponse,
@@ -162,7 +172,7 @@ export default function LinguaLivePage() {
           {messages.map((msg) => (
             <ChatMessage key={msg.id} message={msg} />
           ))}
-          {isAiResponding && !isAiSpeaking && ( // Show thinking only if not already speaking
+          {isAiResponding && !isAiSpeaking && ( 
             <div className="flex justify-start items-end gap-2">
                 <div className="h-8 w-8 flex-shrink-0">
                     <BotIcon className="h-full w-full text-primary" />

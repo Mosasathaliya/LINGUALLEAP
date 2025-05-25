@@ -1,3 +1,4 @@
+
 "use server";
 
 import { correctGrammarAndRespond, CorrectGrammarAndRespondInput } from "@/ai/flows/correct-grammar-and-respond";
@@ -5,6 +6,7 @@ import { varySentenceStructure, VarySentenceStructureInput } from "@/ai/flows/va
 
 export interface ProcessUserMessageInput {
   userText: string;
+  conversationHistory?: CorrectGrammarAndRespondInput['conversationHistory'];
 }
 
 export interface ProcessUserMessageOutput {
@@ -14,7 +16,10 @@ export interface ProcessUserMessageOutput {
 export async function processUserMessage(input: ProcessUserMessageInput): Promise<ProcessUserMessageOutput> {
   try {
     // Step 1: Correct grammar and get initial AI response
-    const grammarCorrectionInput: CorrectGrammarAndRespondInput = { userText: input.userText };
+    const grammarCorrectionInput: CorrectGrammarAndRespondInput = { 
+      userText: input.userText,
+      conversationHistory: input.conversationHistory,
+    };
     const grammarCorrectionOutput = await correctGrammarAndRespond(grammarCorrectionInput);
 
     if (!grammarCorrectionOutput || !grammarCorrectionOutput.aiResponse) {
