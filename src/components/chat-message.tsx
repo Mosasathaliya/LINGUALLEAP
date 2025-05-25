@@ -1,7 +1,8 @@
 "use client";
 
 import type { FC } from 'react';
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useState, useEffect } from 'react';
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { User, Bot } from "lucide-react";
@@ -20,6 +21,12 @@ interface ChatMessageProps {
 
 const ChatMessage: FC<ChatMessageProps> = ({ message }) => {
   const isUser = message.sender === 'user';
+  const [formattedTimestamp, setFormattedTimestamp] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Format timestamp on client-side after hydration
+    setFormattedTimestamp(format(message.timestamp, 'p'));
+  }, [message.timestamp]);
 
   return (
     <div className={cn("flex items-end gap-2", isUser ? "justify-end" : "justify-start")}>
@@ -34,12 +41,14 @@ const ChatMessage: FC<ChatMessageProps> = ({ message }) => {
       )}>
         <CardContent className="p-3">
           <p className="text-sm whitespace-pre-wrap">{message.text}</p>
-          <p className={cn(
-            "text-xs mt-1",
-            isUser ? "text-muted-foreground/70 text-right" : "text-primary-foreground/70 text-left"
-          )}>
-            {format(message.timestamp, 'p')}
-          </p>
+          {formattedTimestamp && (
+            <p className={cn(
+              "text-xs mt-1",
+              isUser ? "text-muted-foreground/70 text-right" : "text-primary-foreground/70 text-left"
+            )}>
+              {formattedTimestamp}
+            </p>
+          )}
         </CardContent>
       </Card>
       {isUser && (
