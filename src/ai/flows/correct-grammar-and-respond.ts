@@ -47,7 +47,7 @@ Follow these instructions:
 {{#if conversationHistory}}
 Conversation History (oldest to newest, leading up to the current user input):
 {{#each conversationHistory}}
-{{#if (eq this.role "user")}}User: {{this.content}}{{else}}Tutor: {{this.content}}{{/if}}
+[{{this.role}}]: {{this.content}}
 {{/each}}
 
 {{/if}}
@@ -63,7 +63,13 @@ const correctGrammarAndRespondFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await correctGrammarAndRespondPrompt(input);
-    return output!;
+    if (!output) {
+      console.error("AI prompt did not return a valid output object for correctGrammarAndRespondFlow.", input);
+      // Attempt to provide a graceful fallback, though the schema expects a response.
+      // This might still cause issues if the schema is strict and doesn't allow partial/empty responses.
+      // Forcing a structured error might be better if the schema was designed for it.
+      return { aiResponse: "I'm having a little trouble understanding that. Could you try rephrasing?" };
+    }
+    return output;
   }
 );
-
