@@ -1,3 +1,4 @@
+
 import type {Metadata} from 'next';
 import { Geist, Geist_Mono } from 'next/font/google'; // Corrected import name
 import './globals.css';
@@ -16,6 +17,7 @@ const geistMono = Geist_Mono({ // Corrected variable name
 export const metadata: Metadata = {
   title: 'LinguaLive - AI English Tutor',
   description: 'Practice and improve your spoken English with an AI partner.',
+  viewport: 'width=device-width, initial-scale=1',
 };
 
 export default function RootLayout({
@@ -24,7 +26,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className="dark">
       <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}>
         {children}
         <Toaster />

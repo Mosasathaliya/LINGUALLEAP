@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -8,32 +9,32 @@ body {
 
 @layer base {
   :root {
-    --background: 208 100% 97%; /* Very Light Blue #F0F8FF */
-    --foreground: 210 10% 23%; /* Dark Slate Gray */
+    --background: 210 100% 97%; /* Very Light Blue (Alice Blue like) */
+    --foreground: 220 40% 25%; /* Dark Slate Blue text */
 
-    --card: 0 0% 100%;
-    --card-foreground: 210 10% 23%;
+    --card: 0 0% 100%; /* White */
+    --card-foreground: 220 40% 25%; /* Dark Slate Blue text */
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 210 10% 23%;
+    --popover: 0 0% 100%; /* White */
+    --popover-foreground: 220 40% 25%; /* Dark Slate Blue text */
 
-    --primary: 217 100% 73%; /* Soft Blue #75A9FF */
+    --primary: 217 100% 73%; /* Soft Blue */
     --primary-foreground: 0 0% 100%; /* White */
 
-    --secondary: 210 20% 93%; /* Lighter Gray */
-    --secondary-foreground: 210 10% 23%;
+    --secondary: 210 40% 93%; /* Lighter Sky Blue */
+    --secondary-foreground: 220 40% 30%; /* Darker Blue Text for secondary */
 
-    --muted: 210 20% 96%; /* Light Gray for user messages */
-    --muted-foreground: 210 10% 40%;
+    --muted: 210 60% 96%; /* Very Light Blue for user messages */
+    --muted-foreground: 220 35% 45%; /* Muted Dark Blue Text for muted */
 
-    --accent: 120 73% 75%; /* Light Green #90EE90 */
+    --accent: 120 73% 75%; /* Light Green */
     --accent-foreground: 120 20% 25%; /* Dark Green */
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 210 20% 85%;
-    --input: 210 20% 90%;
+    --border: 210 30% 88%; /* Light Blue-Gray Border */
+    --input: 210 30% 92%; /* Lighter Blue-Gray Input */
     --ring: 217 100% 73%; /* Primary color for rings */
 
     --chart-1: 12 76% 61%;
@@ -43,45 +44,45 @@ body {
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
 
-    /* Sidebar variables, kept for shadcn components but themed */
-    --sidebar-background: 208 100% 95%; /* Lighter version of background */
-    --sidebar-foreground: 210 10% 23%;
+    /* Sidebar variables for light theme */
+    --sidebar-background: 210 100% 95%; /* Slightly darker light blue */
+    --sidebar-foreground: 220 40% 25%; /* Dark Slate Blue text */
     --sidebar-primary: 217 100% 73%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 120 73% 75%;
     --sidebar-accent-foreground: 120 20% 25%;
-    --sidebar-border: 210 20% 85%;
+    --sidebar-border: 210 30% 85%; /* Original border for sidebar */
     --sidebar-ring: 217 100% 73%;
   }
 
   .dark {
-    --background: 210 10% 15%; /* Dark Blue-Gray */
-    --foreground: 0 0% 98%; /* Light Gray */
+    --background: 220 40% 12%; /* Deep Dark Blue */
+    --foreground: 210 30% 90%; /* Light Bluish White */
 
-    --card: 210 10% 20%;
-    --card-foreground: 0 0% 98%;
+    --card: 220 35% 18%; /* Slightly Lighter Deep Dark Blue */
+    --card-foreground: 210 30% 90%; /* Light Bluish White */
 
-    --popover: 210 10% 20%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 220 35% 18%; /* Slightly Lighter Deep Dark Blue */
+    --popover-foreground: 210 30% 90%; /* Light Bluish White */
 
-    --primary: 217 100% 73%; /* Soft Blue #75A9FF */
-    --primary-foreground: 210 10% 10%; /* Dark for contrast on soft blue */
+    --primary: 217 90% 65%; /* Slightly desaturated Soft Blue for better harmony */
+    --primary-foreground: 210 100% 96%; /* Brightest White/Light Blue for contrast on primary */
 
-    --secondary: 210 10% 25%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 220 30% 25%; /* Muted Dark Blue */
+    --secondary-foreground: 210 25% 88%; /* Lighter Bluish Gray */
 
-    --muted: 210 10% 22%; /* Darker Gray for user messages */
-    --muted-foreground: 0 0% 70%;
+    --muted: 220 30% 22%; /* Darker Muted Blue for user messages */
+    --muted-foreground: 210 25% 75%; /* Medium Bluish Gray */
 
-    --accent: 120 60% 60%; /* Slightly desaturated Green for dark mode */
-    --accent-foreground: 0 0% 98%;
+    --accent: 140 60% 65%; /* Mint Green (adjusted from light green for dark bg) */
+    --accent-foreground: 210 100% 96%; /* White/Light for green accent */
 
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 70% 50%; /* Slightly desaturated red */
     --destructive-foreground: 0 0% 98%;
 
-    --border: 210 10% 30%;
-    --input: 210 10% 30%;
-    --ring: 217 100% 73%;
+    --border: 220 30% 28%; /* Muted Blue Border */
+    --input: 220 30% 28%; /* Muted Blue Input */
+    --ring: 217 90% 65%; /* Primary color for rings */
 
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
@@ -89,14 +90,15 @@ body {
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
 
-    --sidebar-background: 210 10% 10%;
-    --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 217 100% 73%;
-    --sidebar-primary-foreground: 210 10% 10%;
-    --sidebar-accent: 120 60% 60%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 210 10% 25%;
-    --sidebar-ring: 217 100% 73%;
+    /* Sidebar variables for dark theme */
+    --sidebar-background: 220 40% 9%; /* Even Darker Blue for Sidebar */
+    --sidebar-foreground: 210 30% 85%; /* Light Bluish White for sidebar text */
+    --sidebar-primary: 217 90% 65%;
+    --sidebar-primary-foreground: 210 100% 96%;
+    --sidebar-accent: 140 60% 65%;
+    --sidebar-accent-foreground: 210 100% 96%;
+    --sidebar-border: 220 30% 25%; /* Darker border for sidebar */
+    --sidebar-ring: 217 90% 65%;
   }
 }
 
