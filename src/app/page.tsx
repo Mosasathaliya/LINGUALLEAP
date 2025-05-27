@@ -10,17 +10,20 @@ import type { CorrectGrammarAndRespondInput } from '@/ai/flows/correct-grammar-a
 import { BotIcon } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 
+const INITIAL_GREETING_TEXT = "Hello! I'm LinguaLive, your AI English tutor. Speak or type to start practicing your English!";
+
 export default function LinguaLivePage() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'initial-ai-message',
-      text: "Hello! I'm LinguaLive, your AI English tutor. Speak or type to start practicing your English!",
+      text: INITIAL_GREETING_TEXT,
       sender: 'ai',
       timestamp: new Date(),
     }
   ]);
   const [isAiResponding, setIsAiResponding] = useState(false);
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
+  const [areVoicesLoaded, setAreVoicesLoaded] = useState(false); // New state
   const scrollAreaViewportRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
@@ -67,20 +70,32 @@ export default function LinguaLivePage() {
   
   useEffect(() => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        const loadVoices = () => {
-            window.speechSynthesis.getVoices(); 
+        const checkAndSetVoicesLoaded = () => {
+            const currentVoices = window.speechSynthesis.getVoices();
+            if (currentVoices.length > 0) {
+                setAreVoicesLoaded(true);
+                // Once voices are loaded, we can optionally remove the listener
+                // if we don't expect the voice list to change, or don't need to react to it.
+                // For now, to be safe, especially if system voices can change, we can leave it.
+                // If issues persist or for optimization, one could remove it:
+                // window.speechSynthesis.onvoiceschanged = null;
+            }
         };
-        loadVoices(); 
-        window.speechSynthesis.onvoiceschanged = loadVoices; 
+        
+        // Check immediately in case voices are already available
+        checkAndSetVoicesLoaded();
+        
+        // Subscribe to voiceschanged event for asynchronous loading
+        window.speechSynthesis.onvoiceschanged = checkAndSetVoicesLoaded;
 
         return () => {
-            window.speechSynthesis.onvoiceschanged = null;
-            if (window.speechSynthesis.speaking) {
+            window.speechSynthesis.onvoiceschanged = null; // Cleanup listener
+            if (window.speechSynthesis.speaking) { // Cleanup speech if component unmounts
                 window.speechSynthesis.cancel();
             }
         };
     }
-  }, []);
+  }, []); // Runs once on mount to setup voice loading
 
 
   const scrollToBottom = () => {
@@ -93,15 +108,22 @@ export default function LinguaLivePage() {
     scrollToBottom();
   }, [messages]);
 
+  // Effect for speaking the initial AI message, now dependent on voices being loaded
   useEffect(() => {
-    if (messages.length === 1 && messages[0].id === 'initial-ai-message' && !messages[0].text.startsWith("Hello! I'm LinguaLive")) {
-        // Only speak if it's the very first default message, to avoid re-speaking if user refreshes.
-        // This logic might need adjustment if the initial message changes or if we want it to always speak on first load.
-    } else if (messages.length === 1 && messages[0].id === 'initial-ai-message') {
-      setTimeout(() => speak(messages[0].text), 500);
+    if (
+      messages.length === 1 &&
+      messages[0].id === 'initial-ai-message' &&
+      messages[0].text === INITIAL_GREETING_TEXT && // Be specific about the message
+      areVoicesLoaded // Only speak if voices are confirmed to be loaded
+    ) {
+      speak(messages[0].text);
     }
+  // messages and areVoicesLoaded are the key dependencies.
+  // speak function could be a dependency if it's memoized with useCallback,
+  // or if its definition changes based on other state/props.
+  // For now, this should be fine.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [messages, areVoicesLoaded]);
 
 
   const handleSendMessage = async (text: string) => {
@@ -111,7 +133,6 @@ export default function LinguaLivePage() {
     }
 
     const historyToKeep = 10;
-    // Prepare conversation history from messages *before* adding the current user's message
     const conversationHistoryForAPI: CorrectGrammarAndRespondInput['conversationHistory'] =
       messages.slice(-historyToKeep).map(msg => ({
         role: msg.sender === 'user' ? 'user' : 'model',
@@ -139,7 +160,17 @@ export default function LinguaLivePage() {
         timestamp: new Date(),
       };
       setMessages((prevMessages) => [...prevMessages, aiMessage]);
-      speak(aiResponse);
+      if (areVoicesLoaded) { // Also check here before speaking subsequent messages
+        speak(aiResponse);
+      } else {
+        // Handle case where voices might not be loaded yet for some reason,
+        // though less likely for subsequent messages.
+        toast({
+          title: "Speech Warning",
+          description: "Voices not ready, cannot play audio response.",
+          variant: "default",
+        });
+      }
     } catch (error) {
       console.error("Error getting AI response:", error);
       const errorMessageText = "Sorry, I couldn't process that. Please try again.";
@@ -150,7 +181,9 @@ export default function LinguaLivePage() {
         timestamp: new Date(),
       };
       setMessages((prevMessages) => [...prevMessages, errorMessage]);
-      speak(errorMessageText);
+      if (areVoicesLoaded) {
+        speak(errorMessageText);
+      }
     } finally {
       setIsAiResponding(false);
     }
