@@ -23,7 +23,7 @@ export default function LinguaLivePage() {
   ]);
   const [isAiResponding, setIsAiResponding] = useState(false);
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
-  const [areVoicesLoaded, setAreVoicesLoaded] = useState(false); // New state
+  const [areVoicesLoaded, setAreVoicesLoaded] = useState(false);
   const scrollAreaViewportRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
@@ -70,32 +70,33 @@ export default function LinguaLivePage() {
   
   useEffect(() => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        const checkAndSetVoicesLoaded = () => {
-            const currentVoices = window.speechSynthesis.getVoices();
-            if (currentVoices.length > 0) {
-                setAreVoicesLoaded(true);
-                // Once voices are loaded, we can optionally remove the listener
-                // if we don't expect the voice list to change, or don't need to react to it.
-                // For now, to be safe, especially if system voices can change, we can leave it.
-                // If issues persist or for optimization, one could remove it:
-                // window.speechSynthesis.onvoiceschanged = null;
-            }
-        };
-        
-        // Check immediately in case voices are already available
-        checkAndSetVoicesLoaded();
-        
-        // Subscribe to voiceschanged event for asynchronous loading
-        window.speechSynthesis.onvoiceschanged = checkAndSetVoicesLoaded;
+      const handleVoicesChanged = () => {
+        // Check if voices are available and update state
+        if (window.speechSynthesis.getVoices().length > 0) {
+          setAreVoicesLoaded(true);
+          // Optional: if using the listener only to confirm initial load,
+          // you might remove it here to prevent further state updates if not needed.
+          // window.speechSynthesis.onvoiceschanged = null;
+        }
+      };
 
-        return () => {
-            window.speechSynthesis.onvoiceschanged = null; // Cleanup listener
-            if (window.speechSynthesis.speaking) { // Cleanup speech if component unmounts
-                window.speechSynthesis.cancel();
-            }
-        };
+      // Check if voices are already loaded synchronously
+      if (window.speechSynthesis.getVoices().length > 0) {
+        setAreVoicesLoaded(true);
+      } else {
+        // If not, subscribe to the voiceschanged event
+        window.speechSynthesis.onvoiceschanged = handleVoicesChanged;
+      }
+
+      // Cleanup function for when the component unmounts
+      return () => {
+        window.speechSynthesis.onvoiceschanged = null; // Remove the event listener
+        if (window.speechSynthesis.speaking) { // Cancel any ongoing speech
+          window.speechSynthesis.cancel();
+        }
+      };
     }
-  }, []); // Runs once on mount to setup voice loading
+  }, []); // Empty dependency array ensures this effect runs only once on mount and cleans up on unmount
 
 
   const scrollToBottom = () => {
@@ -113,15 +114,11 @@ export default function LinguaLivePage() {
     if (
       messages.length === 1 &&
       messages[0].id === 'initial-ai-message' &&
-      messages[0].text === INITIAL_GREETING_TEXT && // Be specific about the message
-      areVoicesLoaded // Only speak if voices are confirmed to be loaded
+      messages[0].text === INITIAL_GREETING_TEXT && 
+      areVoicesLoaded 
     ) {
       speak(messages[0].text);
     }
-  // messages and areVoicesLoaded are the key dependencies.
-  // speak function could be a dependency if it's memoized with useCallback,
-  // or if its definition changes based on other state/props.
-  // For now, this should be fine.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages, areVoicesLoaded]);
 
@@ -160,11 +157,9 @@ export default function LinguaLivePage() {
         timestamp: new Date(),
       };
       setMessages((prevMessages) => [...prevMessages, aiMessage]);
-      if (areVoicesLoaded) { // Also check here before speaking subsequent messages
+      if (areVoicesLoaded) { 
         speak(aiResponse);
       } else {
-        // Handle case where voices might not be loaded yet for some reason,
-        // though less likely for subsequent messages.
         toast({
           title: "Speech Warning",
           description: "Voices not ready, cannot play audio response.",
