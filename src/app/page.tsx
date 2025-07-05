@@ -71,32 +71,26 @@ export default function LinguaLivePage() {
   useEffect(() => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       const handleVoicesChanged = () => {
-        // Check if voices are available and update state
         if (window.speechSynthesis.getVoices().length > 0) {
           setAreVoicesLoaded(true);
-          // Optional: if using the listener only to confirm initial load,
-          // you might remove it here to prevent further state updates if not needed.
-          // window.speechSynthesis.onvoiceschanged = null;
+          window.speechSynthesis.onvoiceschanged = null;
         }
       };
 
-      // Check if voices are already loaded synchronously
       if (window.speechSynthesis.getVoices().length > 0) {
         setAreVoicesLoaded(true);
       } else {
-        // If not, subscribe to the voiceschanged event
         window.speechSynthesis.onvoiceschanged = handleVoicesChanged;
       }
 
-      // Cleanup function for when the component unmounts
       return () => {
-        window.speechSynthesis.onvoiceschanged = null; // Remove the event listener
-        if (window.speechSynthesis.speaking) { // Cancel any ongoing speech
+        window.speechSynthesis.onvoiceschanged = null;
+        if (window.speechSynthesis.speaking) {
           window.speechSynthesis.cancel();
         }
       };
     }
-  }, []); // Empty dependency array ensures this effect runs only once on mount and cleans up on unmount
+  }, []);
 
 
   const scrollToBottom = () => {
@@ -108,20 +102,6 @@ export default function LinguaLivePage() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
-
-  // Effect for speaking the initial AI message, now dependent on voices being loaded
-  useEffect(() => {
-    if (
-      messages.length === 1 &&
-      messages[0].id === 'initial-ai-message' &&
-      messages[0].text === INITIAL_GREETING_TEXT && 
-      areVoicesLoaded 
-    ) {
-      speak(messages[0].text);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [messages, areVoicesLoaded]);
-
 
   const handleSendMessage = async (text: string) => {
     if (window.speechSynthesis.speaking) {
