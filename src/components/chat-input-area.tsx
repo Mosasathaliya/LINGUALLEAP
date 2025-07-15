@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 
 interface ChatInputAreaProps {
   onSubmit: (text: string) => void;
-  isLoading: boolean; // True if AI is responding OR speaking
+  isLoading: boolean;
 }
 
 const ChatInputArea: FC<ChatInputAreaProps> = ({ onSubmit, isLoading }) => {
@@ -55,8 +55,6 @@ const ChatInputArea: FC<ChatInputAreaProps> = ({ onSubmit, isLoading }) => {
       speechRecognitionRef.current = recognition;
     } else {
       console.warn("Speech recognition not supported by this browser.");
-      // Optionally, disable mic functionality or inform user via toast
-      // For now, the mic button just won't appear effectively if speechRecognitionRef.current is null
     }
 
     return () => {
@@ -65,7 +63,7 @@ const ChatInputArea: FC<ChatInputAreaProps> = ({ onSubmit, isLoading }) => {
       }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Run once on mount
+  }, []); 
 
   const handleFormSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -83,17 +81,13 @@ const ChatInputArea: FC<ChatInputAreaProps> = ({ onSubmit, isLoading }) => {
       setIsRecording(false);
     } else {
       if (inputText.trim()) {
-        // This case is handled by form submit, button click here means it's a submit action
-        // So, if there's text, the form's onSubmit will trigger.
-        // This explicit call handles if the button is clicked directly instead of Enter key.
          if (inputText.trim() && !isLoading) {
             onSubmit(inputText.trim());
             setInputText("");
         }
       } else {
-        // No text, start recording
         if (speechRecognitionRef.current) {
-          setInputText(""); // Clear any previous text before starting new recording
+          setInputText(""); 
           speechRecognitionRef.current.start();
           setIsRecording(true);
         } else {
@@ -112,7 +106,7 @@ const ChatInputArea: FC<ChatInputAreaProps> = ({ onSubmit, isLoading }) => {
       return <Loader2 className="h-5 w-5 animate-spin" />;
     }
     if (isRecording) {
-      return <Square className="h-5 w-5" />; // Stop icon
+      return <Square className="h-5 w-5" />;
     }
     if (inputText.trim()) {
       return <Send className="h-5 w-5" />;

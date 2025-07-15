@@ -2,6 +2,7 @@
 "use server";
 
 import { correctGrammarAndRespond, CorrectGrammarAndRespondInput } from "@/ai/flows/correct-grammar-and-respond";
+import { textToSpeech } from "@/ai/flows/text-to-speech";
 import { varySentenceStructure, VarySentenceStructureInput } from "@/ai/flows/vary-sentence-structure";
 
 export interface ProcessUserMessageInput {
@@ -11,11 +12,11 @@ export interface ProcessUserMessageInput {
 
 export interface ProcessUserMessageOutput {
   aiResponse: string;
+  audioDataUri: string;
 }
 
 export async function processUserMessage(input: ProcessUserMessageInput): Promise<ProcessUserMessageOutput> {
   try {
-    // Step 1: Correct grammar and get initial AI response
     const grammarCorrectionInput: CorrectGrammarAndRespondInput = { 
       userText: input.userText,
       conversationHistory: input.conversationHistory,
@@ -26,7 +27,6 @@ export async function processUserMessage(input: ProcessUserMessageInput): Promis
       throw new Error("Failed to get a response from grammar correction flow.");
     }
 
-    // Step 2: Vary sentence structure of the AI's response
     const varyStructureInput: VarySentenceStructureInput = { originalResponse: grammarCorrectionOutput.aiResponse };
     const variedStructureOutput = await varySentenceStructure(varyStructureInput);
     
@@ -34,10 +34,21 @@ export async function processUserMessage(input: ProcessUserMessageInput): Promis
       throw new Error("Failed to get a response from sentence variation flow.");
     }
 
-    return { aiResponse: variedStructureOutput.variedResponse };
+    const aiResponseText = variedStructureOutput.variedResponse;
+
+    const ttsOutput = await textToSpeech({ text: aiResponseText });
+
+    return { 
+      aiResponse: aiResponseText,
+      audioDataUri: ttsOutput.audioDataUri,
+    };
   } catch (error) {
     console.error("Error processing user message:", error);
-    // Fallback response in case of an error
-    return { aiResponse: "I'm sorry, I encountered an issue. Could you please try again?" };
+    const fallbackText = "I'm sorry, I encountered an issue. Could you please try again?";
+    const fallbackAudio = await textToSpeech({ text: fallbackText });
+    return { 
+      aiResponse: fallbackText,
+      audioDataUri: fallbackAudio.audioDataUri,
+    };
   }
 }
